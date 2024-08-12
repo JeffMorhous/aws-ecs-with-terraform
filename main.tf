@@ -71,7 +71,7 @@ module "alb" {
 
  target_groups = [
   {
-   backend_port         = 3000
+   backend_port         = 80
    backend_protocol     = "HTTP"
    target_type          = "ip"
   }
@@ -163,12 +163,20 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 resource "aws_ecs_task_definition" "this" {
-  container_definitions = jsonencode([{
-    essential = true,
-    image = resource.docker_registry_image.exampleimage.name,
-    name = "example-container",
-    portMappings = [{ containerPort = 3000, hostPort = 3000 }],
-  }])
+  container_definitions = jsonencode([
+    {
+      essential = true,
+      image = resource.docker_registry_image.exampleimage.name,
+      name = "example-container",
+      portMappings = [{ containerPort = 3000, hostPort = 3000 }],
+    },
+    {
+      essential = true,
+      image = "public.ecr.aws/b1e6w9f4/nginx-sidecar-start-header:latest",
+      name = "nginx-sidecar",
+      portMappings = [{ containerPort = 80, hostPort = 80 }],
+    }
+  ])
   cpu = 256
   execution_role_arn = "${aws_iam_role.ecsTaskExecutionRole.arn}"
   family = "family-of-judoscale-example-tasks"
@@ -195,8 +203,8 @@ resource "aws_ecs_service" "this" {
   }
 
   load_balancer {
-    container_name = "example-container"
-    container_port = 3000
+    container_name = "nginx-sidecar"
+    container_port = 80
     target_group_arn = module.alb.target_group_arns[0]
   }
 
