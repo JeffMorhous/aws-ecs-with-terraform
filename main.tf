@@ -71,7 +71,7 @@ module "alb" {
 
  target_groups = [
   {
-   backend_port         = 8000
+   backend_port         = 3000
    backend_protocol     = "HTTP"
    target_type          = "ip"
   }
@@ -167,7 +167,7 @@ resource "aws_ecs_task_definition" "this" {
     essential = true,
     image = resource.docker_registry_image.exampleimage.name,
     name = "example-container",
-    portMappings = [{ containerPort = 8000, hostPort = 8000 }],
+    portMappings = [{ containerPort = 3000, hostPort = 3000 }],
   }])
   cpu = 256
   execution_role_arn = "${aws_iam_role.ecsTaskExecutionRole.arn}"
@@ -196,7 +196,7 @@ resource "aws_ecs_service" "this" {
 
   load_balancer {
     container_name = "example-container"
-    container_port = 8000
+    container_port = 3000
     target_group_arn = module.alb.target_group_arns[0]
   }
 
